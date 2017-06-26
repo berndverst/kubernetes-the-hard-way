@@ -1,8 +1,10 @@
-# Kubernetes The Hard Way
+# Kubernetes The Hard Way - Microsoft Azure Edition
+#### A guide based on *kelseyhightower's* tutorial for Kubernetes on GCP
 
-This tutorial will walk you through setting up Kubernetes the hard way. This guide is not for people looking for a fully automated command to bring up a Kubernetes cluster. If that's you then check out [Google Container Engine](https://cloud.google.com/container-engine), or the [Getting Started Guides](http://kubernetes.io/docs/getting-started-guides/).
 
-This tutorial is optimized for learning, which means taking the long route to help people understand each task required to bootstrap a Kubernetes cluster. This tutorial requires access to [Google Compute Engine](https://cloud.google.com/compute).
+This tutorial will walk you through setting up Kubernetes the hard way. This guide is not for people looking for a fully automated command to bring up a Kubernetes cluster. If that's you then check out [Azure Container Service](https://azure.microsoft.com/en-us/services/container-service/), or the [Getting Started Guides](http://kubernetes.io/docs/getting-started-guides/).
+
+This tutorial is optimized for learning, which means taking the long route to help people understand each task required to bootstrap a Kubernetes cluster. This tutorial requires access to [Microsoft Azure](azure.microsoft.com).
 
 > The results of this tutorial should not be viewed as production ready, and may receive limited support from the community, but don't let that prevent you from learning!
 
@@ -32,7 +34,7 @@ The resulting cluster will be missing the following features:
 
 ## Labs
 
-This tutorial assumes you have access to [Google Cloud Platform](https://cloud.google.com) and the [Google Cloud SDK](https://cloud.google.com/sdk/)(148.0.0+). While GCP is used for basic infrastructure needs the things learned in this tutorial can be applied to every platform.
+This tutorial assumes you have access to [Microsoft Azure](azure.microsoft.com) and the [Azure CLI](https://docs.microsoft.com/en-us/cli/azure/install-azure-cli). While Azure is used for basic infrastructure needs the things learned in this tutorial can be applied to every platform.
 
 * [Cloud Infrastructure Provisioning](docs/01-infrastructure-gcp.md)
 * [Setting up a CA and TLS Cert Generation](docs/02-certificate-authority.md)
