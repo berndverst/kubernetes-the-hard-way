@@ -2,89 +2,114 @@
 
 This lab will walk you through provisioning the compute instances required for running a H/A Kubernetes cluster. A total of 6 virtual machines will be created.
 
+The guide assumes you've installed the Azure CLI 2.0, and will be creating resources in the eastus region, within a resource group named kubernetes. To create this resource group, simply run the following command:
+
+```
+az group create -n kubernetes -l eastus
+```
 After completing this guide you should have the following compute instances:
 
 ```
-gcloud compute instances list
+az vm list --query "[].{name:name,provisioningState:provisioningState}"`
 ```
 
 ````
-NAME         ZONE           MACHINE_TYPE   PREEMPTIBLE  INTERNAL_IP  EXTERNAL_IP      STATUS
-controller0  us-central1-f  n1-standard-1               10.240.0.10  XXX.XXX.XXX.XXX  RUNNING
-controller1  us-central1-f  n1-standard-1               10.240.0.11  XXX.XXX.XXX.XXX  RUNNING
-controller2  us-central1-f  n1-standard-1               10.240.0.12  XXX.XXX.XXX.XXX  RUNNING
-worker0      us-central1-f  n1-standard-1               10.240.0.20  XXX.XXX.XXX.XXX  RUNNING
-worker1      us-central1-f  n1-standard-1               10.240.0.21  XXX.XXX.XXX.XXX  RUNNING
-worker2      us-central1-f  n1-standard-1               10.240.0.22  XXX.XXX.XXX.XXX  RUNNING
+```shell
+Name         ProvisioningState
+-----------  -------------------
+controller0  Succeeded
+controller1  Succeeded
+controller2  Succeeded
+worker0      Succeeded
+worker1      Succeeded
+worker2      Succeeded
+```
 ````
 
 > All machines will be provisioned with fixed private IP addresses to simplify the bootstrap process.
 
 To make our Kubernetes control plane remotely accessible, a public IP address will be provisioned and assigned to a Load Balancer that will sit in front of the 3 Kubernetes controllers.
 
-## Prerequisites
-
-Set the compute region and zone to us-central1:
-
-```
-gcloud config set compute/region us-central1
-```
-
-```
-gcloud config set compute/zone us-central1-f
-```
-
 ## Setup Networking
 
 
-Create a custom network:
+Create a virtual network and subnet for the Kubernetes cluster:
 
 ```
-gcloud compute networks create kubernetes-the-hard-way --mode custom
-```
-
-Create a subnet for the Kubernetes cluster:
-
-```
-gcloud compute networks subnets create kubernetes \
-  --network kubernetes-the-hard-way \
-  --range 10.240.0.0/24 \
-  --region us-central1
+az network vnet create -g kubernetes \
+  -n kubernetes-vnet \
+  --address-prefix 10.240.0.0/16 \
+  --subnet-name kubernetes-subnet
 ```
 
 ### Create Firewall Rules
 
+Create a firewall ("network security group"), assign it to the subnet, and configure it to allow the necessary incoming traffic:
+
 ```
-gcloud compute firewall-rules create allow-internal \
-  --allow tcp,udp,icmp \
-  --network kubernetes-the-hard-way \
-  --source-ranges 10.240.0.0/24,10.200.0.0/16
+az network nsg create -g kubernetes -n kubernetes-nsg
 ```
 
 ```
-gcloud compute firewall-rules create allow-external \
-  --allow tcp:22,tcp:3389,tcp:6443,icmp \
-  --network kubernetes-the-hard-way \
-  --source-ranges 0.0.0.0/0
+az network vnet subnet update -g kubernetes \
+  -n kubernetes-subnet \
+  --vnet-name kubernetes-vnet \
+  --network-security-group kubernetes-nsg
 ```
 
 ```
-gcloud compute firewall-rules create allow-healthz \
-  --allow tcp:8080 \
-  --network kubernetes-the-hard-way \
-  --source-ranges 130.211.0.0/22,35.191.0.0/16
+az network nsg rule create -g kubernetes \
+  -n kubernetes-allow-ssh \
+  --access allow \
+  --destination-address-prefix '*' \
+  --destination-port-range 22 \
+  --direction inbound \
+  --nsg-name kubernetes-nsg \
+  --protocol tcp \
+  --source-address-prefix '*' \
+  --source-port-range '*' \
+  --priority 1000
+```
+
+```
+az network nsg rule create -g kubernetes \
+  -n kubernetes-allow-api-server \
+  --access allow \
+  --destination-address-prefix '*' \
+  --destination-port-range 6443 \
+  --direction inbound \
+  --nsg-name kubernetes-nsg \
+  --protocol tcp \
+  --source-address-prefix '*' \
+  --source-port-range '*' \
+  --priority 1001
+```
+
+```
+az network nsg rule create -g kubernetes \
+  -n kubernetes-allow-api-server \
+  --access allow \
+  --destination-address-prefix '*' \
+  --destination-port-range 3389 \
+  --direction inbound \
+  --nsg-name kubernetes-nsg \
+  --protocol tcp \
+  --source-address-prefix '*' \
+  --source-port-range '*' \
+  --priority 1002
 ```
 
 
 ```
-gcloud compute firewall-rules list --filter "network=kubernetes-the-hard-way"
+az network nsg rule list -g kubernetes --nsg-name kubernetes-nsg --query "[].{Name:name, Port:destinationPortRange}" -otable
 ```
 
 ```
-NAME            NETWORK                  SRC_RANGES                   RULES                          SRC_TAGS  TARGET_TAGS
-allow-external  kubernetes-the-hard-way  0.0.0.0/0                    tcp:22,tcp:3389,tcp:6443,icmp
-allow-healthz   kubernetes-the-hard-way  130.211.0.0/22               tcp:8080
-allow-internal  kubernetes-the-hard-way  10.240.0.0/24,10.200.0.0/16  tcp,udp,icmp
+Name                           Port
+---------------------------  ------
+kubernetes-allow-ssh             22
+kubernetes-allow-api-server    6443
+kubernetes-allow-api-3389      3389
 ```
 
 ### Create the Kubernetes Public Address
@@ -92,16 +117,21 @@ allow-internal  kubernetes-the-hard-way  10.240.0.0/24,10.200.0.0/16  tcp,udp,ic
 Create a public IP address that will be used by remote clients to connect to the Kubernetes control plane:
 
 ```
-gcloud compute addresses create kubernetes-the-hard-way --region=us-central1
+az network lb create -g kubernetes \
+  -n kubernetes-lb \
+  --backend-pool-name kubernetes-lb-pool \
+  --public-ip-address kubernetes-pip \
+  --public-ip-address-allocation static
 ```
 
 ```
-gcloud compute addresses list kubernetes-the-hard-way
+az network public-ip show -g kubernetes -n kubernetes-pip --query "{ name: name, location: location, ipAddress: ipAddress, provisioningState: provisioningState}" -o table
 ```
 
 ```
-NAME                     REGION       ADDRESS          STATUS
-kubernetes-the-hard-way  us-central1  XXX.XXX.XXX.XXX  RESERVED
+Name            Location    IpAddress       ProvisioningState
+--------------  ----------  --------------  -------------------
+kubernetes-pip  eastus      XXX.XX.XXX.XXX  Succeeded
 ```
 
 ## Provision Virtual Machines
@@ -113,69 +143,63 @@ All the VMs in this lab will be provisioned using Ubuntu 16.04 mainly because it
 #### Kubernetes Controllers
 
 ```
-gcloud compute instances create controller0 \
- --boot-disk-size 200GB \
- --can-ip-forward \
- --image ubuntu-1604-xenial-v20170307 \
- --image-project ubuntu-os-cloud \
- --machine-type n1-standard-1 \
- --private-network-ip 10.240.0.10 \
- --subnet kubernetes
+az vm availability-set create -g kubernetes -n controller-as
 ```
 
 ```
-gcloud compute instances create controller1 \
- --boot-disk-size 200GB \
- --can-ip-forward \
- --image ubuntu-1604-xenial-v20170307 \
- --image-project ubuntu-os-cloud \
- --machine-type n1-standard-1 \
- --private-network-ip 10.240.0.11 \
- --subnet kubernetes
+for num in {0..2}; do
+    echo "[Controller ${num}] Creating public IP..."
+    az network public-ip create -n controller${num}-pip -g kubernetes > /dev/null
+
+    echo "[Controller ${num}] Creating NIC..."
+    az network nic create -g kubernetes \
+        -n controller${num}-nic \
+        --private-ip-address 10.240.0.1${num} \
+        --public-ip-address controller${num}-pip \
+        --vnet kubernetes-vnet \
+        --subnet kubernetes-subnet \
+        --ip-forwarding \
+        --lb-name kubernetes-lb \
+        --lb-address-pools kubernetes-lb-pool > /dev/null
+
+    echo "[Controller ${num}] Creating VM..."
+    az vm create -g kubernetes \
+        -n controller${num} \
+        --image Canonical:UbuntuServer:16.04-LTS:latest \
+        --nics controller${num}-nic \
+        --availability-set controller-as \
+        --nsg '' > /dev/null
+done
 ```
 
-```
-gcloud compute instances create controller2 \
- --boot-disk-size 200GB \
- --can-ip-forward \
- --image ubuntu-1604-xenial-v20170307 \
- --image-project ubuntu-os-cloud \
- --machine-type n1-standard-1 \
- --private-network-ip 10.240.0.12 \
- --subnet kubernetes
-```
+CONTINUE HERE!!!!!!!!!!!!!!!!!!! MUST RUN ABOVE
 
 #### Kubernetes Workers
 
 ```
-gcloud compute instances create worker0 \
- --boot-disk-size 200GB \
- --can-ip-forward \
- --image ubuntu-1604-xenial-v20170307 \
- --image-project ubuntu-os-cloud \
- --machine-type n1-standard-1 \
- --private-network-ip 10.240.0.20 \
- --subnet kubernetes
+az vm availability-set create -g kubernetes -n worker-as
 ```
 
 ```
-gcloud compute instances create worker1 \
- --boot-disk-size 200GB \
- --can-ip-forward \
- --image ubuntu-1604-xenial-v20170307 \
- --image-project ubuntu-os-cloud \
- --machine-type n1-standard-1 \
- --private-network-ip 10.240.0.21 \
- --subnet kubernetes
-```
+for num in {0..2}; do
+    echo "[Worker ${num}] Creating public IP..."
+    az network public-ip create -n worker${num}-pip -g kubernetes > /dev/null
 
-```
-gcloud compute instances create worker2 \
- --boot-disk-size 200GB \
- --can-ip-forward \
- --image ubuntu-1604-xenial-v20170307 \
- --image-project ubuntu-os-cloud \
- --machine-type n1-standard-1 \
- --private-network-ip 10.240.0.22 \
- --subnet kubernetes
+    echo "[Worker ${num}] Creating NIC..."
+    az network nic create -g kubernetes \
+        -n worker${num}-nic \
+        --private-ip-address 10.240.0.2${num} \
+        --public-ip-address worker${num}-pip \
+        --vnet kubernetes-vnet \
+        --subnet kubernetes-subnet \
+        --ip-forwarding > /dev/null
+
+    echo "[Worker ${num}] Creating VM..."
+    az vm create -g kubernetes \
+        -n worker${num} \
+        --image Canonical:UbuntuServer:16.04.0-LTS:16.04.201609210 \
+        --nics worker${num}-nic \
+        --availability-set worker-as \
+        --nsg '' > /dev/null
+done
 ```
