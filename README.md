@@ -1,6 +1,7 @@
 # Kubernetes The Hard Way - Microsoft Azure Edition
 #### A guide based on *kelseyhightower's* tutorial for Kubernetes on GCP and Azure specifics steps by *lostintangent*
 
+## Work in Progress: This guide is not ready for use at this time.
 
 This tutorial will walk you through setting up Kubernetes the hard way. This guide is not for people looking for a fully automated command to bring up a Kubernetes cluster. If that's you then check out [Azure Container Service](https://azure.microsoft.com/en-us/services/container-service/), or the [Getting Started Guides](http://kubernetes.io/docs/getting-started-guides/).
 
