@@ -37,7 +37,7 @@ The resulting cluster will be missing the following features:
 
 This tutorial assumes you have access to [Microsoft Azure](azure.microsoft.com) and the [Azure CLI](https://docs.microsoft.com/en-us/cli/azure/install-azure-cli). While Azure is used for basic infrastructure needs the things learned in this tutorial can be applied to every platform.
 
-* [Cloud Infrastructure Provisioning](docs/01-infrastructure-gcp.md)
+* [Cloud Infrastructure Provisioning](docs/01-infrastructure-azure.md)
 * [Setting up a CA and TLS Cert Generation](docs/02-certificate-authority.md)
 * [Setting up TLS Client Bootstrap and RBAC Authentication](docs/03-auth-configs.md)
 * [Bootstrapping a H/A etcd cluster](docs/04-etcd.md)
