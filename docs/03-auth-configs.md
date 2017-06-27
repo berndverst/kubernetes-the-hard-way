@@ -54,7 +54,11 @@ Distribute the bootstrap token file to each controller node:
 
 ```
 for host in controller0 controller1 controller2; do
-  gcloud compute scp token.csv ${host}:~/
+  PUBLIC_IP_ADDRESS=$(az network public-ip show -g kubernetes \
+    -n ${host}-pip --query "ipAddress" -otsv)
+
+  scp token.csv \
+    $(whoami)@${PUBLIC_IP_ADDRESS}:~/
 done
 ```
 
@@ -67,9 +71,8 @@ Each kubeconfig requires a Kubernetes master to connect to. To support H/A the I
 ### Set the Kubernetes Public Address
 
 ```
-KUBERNETES_PUBLIC_ADDRESS=$(gcloud compute addresses describe kubernetes-the-hard-way \
-  --region us-central1 \
-  --format 'value(address)')
+KUBERNETES_PUBLIC_ADDRESS=$(az network public-ip show -g kubernetes \
+  -n kubernetes-pip --query "ipAddress" -otsv)
 ```
 
 ## Create client kubeconfig files
@@ -135,6 +138,10 @@ kubectl config use-context default --kubeconfig=kube-proxy.kubeconfig
 
 ```
 for host in worker0 worker1 worker2; do
-  gcloud compute scp bootstrap.kubeconfig kube-proxy.kubeconfig ${host}:~/
+  PUBLIC_IP_ADDRESS=$(az network public-ip show -g kubernetes \
+  -n ${host}-pip --query "ipAddress" -otsv)
+
+  scp bootstrap.kubeconfig kube-proxy.kubeconfig \
+  $(whoami)@${PUBLIC_IP_ADDRESS}:~/
 done
 ```

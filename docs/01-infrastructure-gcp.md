@@ -172,8 +172,6 @@ for num in {0..2}; do
 done
 ```
 
-CONTINUE HERE!!!!!!!!!!!!!!!!!!! MUST RUN ABOVE
-
 #### Kubernetes Workers
 
 ```
