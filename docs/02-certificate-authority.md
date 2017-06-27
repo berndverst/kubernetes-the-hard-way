@@ -208,9 +208,8 @@ kube-proxy.pem
 The Kubernetes public IP address will be included in the list of subject alternative names for the Kubernetes server certificate. This will ensure the TLS certificate is valid for remote client access.
 
 ```
-KUBERNETES_PUBLIC_ADDRESS=$(gcloud compute addresses describe kubernetes-the-hard-way \
-  --region us-central1 \
-  --format 'value(address)')
+KUBERNETES_PUBLIC_ADDRESS=$(az network public-ip show -g kubernetes \
+  -n kubernetes-pip --query "ipAddress" -otsv)
 ```
 
 Create the Kubernetes server certificate signing request:
@@ -265,18 +264,24 @@ kubernetes.pem
 
 ## Distribute the TLS certificates
 
-Set the list of Kubernetes hosts where the certs should be copied to:
-
-The following commands will copy the TLS certificates and keys to each Kubernetes host using the `gcloud compute scp` command.
+The following commands will copy the TLS certificates and keys to each Kubernetes host.
 
 ```
 for host in worker0 worker1 worker2; do
-  gcloud compute scp ca.pem kube-proxy.pem kube-proxy-key.pem ${host}:~/
+  PUBLIC_IP_ADDRESS=$(az network public-ip show -g kubernetes \
+    -n ${host}-pip --query "ipAddress" -otsv)
+
+  scp ca.pem kube-proxy-key.pem kube-proxy.pem \
+    $(whoami)@${PUBLIC_IP_ADDRESS}:~/
 done
 ```
 
 ```
 for host in controller0 controller1 controller2; do
-  gcloud compute scp ca.pem ca-key.pem kubernetes-key.pem kubernetes.pem ${host}:~/
+  PUBLIC_IP_ADDRESS=$(az network public-ip show -g kubernetes \
+    -n ${host}-pip --query "ipAddress" -otsv)
+
+  scp ca.pem ca-key.pem kubernetes-key.pem kubernetes.pem \
+    $(whoami)@${PUBLIC_IP_ADDRESS}:~/
 done
 ```
