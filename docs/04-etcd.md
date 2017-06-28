@@ -40,17 +40,17 @@ sudo cp ca.pem kubernetes-key.pem kubernetes.pem /etc/etcd/
 Download the official etcd release binaries from `coreos/etcd` GitHub project:
 
 ```
-wget https://github.com/coreos/etcd/releases/download/v3.1.4/etcd-v3.1.4-linux-amd64.tar.gz
+wget https://github.com/coreos/etcd/releases/download/v3.2.1/etcd-v3.2.1-linux-amd64.tar.gz
 ```
 
 Extract and install the `etcd` server binary and the `etcdctl` command line client: 
 
 ```
-tar -xvf etcd-v3.1.4-linux-amd64.tar.gz
+tar -xvf etcd-v3.2.1-linux-amd64.tar.gz
 ```
 
 ```
-sudo mv etcd-v3.1.4-linux-amd64/etcd* /usr/bin/
+sudo mv etcd-v3.2.1-linux-amd64/etcd* /usr/bin/
 ```
 
 All etcd data is stored under the etcd data directory. In a production cluster the data directory should be backed by a persistent disk. Create the etcd data directory:
@@ -64,8 +64,7 @@ sudo mkdir -p /var/lib/etcd
 The internal IP address will be used by etcd to serve client requests and communicate with other etcd peers.
 
 ```
-INTERNAL_IP=$(curl -s -H "Metadata-Flavor: Google" \
-  http://metadata.google.internal/computeMetadata/v1/instance/network-interfaces/0/ip)
+INTERNAL_IP=$(ip addr show eth0 | grep -oP '(?<=inet\s)\d+(\.\d+){3}')
 ```
 
 Each etcd member must have a unique name within an etcd cluster. Set the etcd name:
