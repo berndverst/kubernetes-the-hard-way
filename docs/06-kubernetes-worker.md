@@ -20,7 +20,7 @@ Some people would like to run workers and cluster services anywhere in the clust
 Each worker node will provision a unique TLS client certificate as defined in the [kubelet TLS bootstrapping guide](https://kubernetes.io/docs/admin/kubelet-tls-bootstrapping/). The `kubelet-bootstrap` user must be granted permission to request a client TLS certificate. 
 
 ```
-gcloud compute ssh controller0
+ssh $(whoami)@$(az network public-ip show -g kubernetes -n controller0-pip --query "ipAddress" -otsv)
 ```
 
 Enable TLS bootstrapping by binding the `kubelet-bootstrap` user to the `system:node-bootstrapper` cluster role:
@@ -60,11 +60,11 @@ sudo mv ca.pem /var/lib/kubernetes/
 ### Install Docker
 
 ```
-wget https://get.docker.com/builds/Linux/x86_64/docker-1.12.6.tgz
+wget https://get.docker.com/builds/Linux/x86_64/docker-17.05.0-ce.tgz
 ```
 
 ```
-tar -xvf docker-1.12.6.tgz
+tar -xzf docker-17.05.0-ce.tgz
 ```
 
 ```
@@ -149,11 +149,11 @@ wget https://storage.googleapis.com/kubernetes-release/release/v1.6.1/bin/linux/
 ```
 
 ```
-chmod +x kubectl kube-proxy kubelet
+chmod +x kubernetes/server/bin/kubectl kubernetes/server/bin/kube-proxy kubernetes/server/bin/kubelet
 ```
 
 ```
-sudo mv kubectl kube-proxy kubelet /usr/bin/
+sudo mv kubernetes/server/bin/kubectl kubernetes/server/bin/kube-proxy kubernetes/server/bin/kubelet /usr/bin/
 ```
 
 Create the kubelet systemd unit file:
@@ -267,7 +267,7 @@ Each worker node will submit a certificate signing request which must be approve
 Log into one of the controller nodes:
 
 ```
-gcloud compute ssh controller0
+ssh $(whoami)@$(az network public-ip show -g kubernetes -n controller0-pip --query "ipAddress" -otsv)
 ```
 
 List the pending certificate requests:
@@ -277,8 +277,8 @@ kubectl get csr
 ```
 
 ```
-NAME        AGE       REQUESTOR           CONDITION
-csr-XXXXX   1m        kubelet-bootstrap   Pending
+NAME             AGE       REQUESTOR           CONDITION
+node-csr-XXXXX   1m        kubelet-bootstrap   Pending
 ```
 
 > Use the kubectl describe csr command to view the details of a specific signing request.
@@ -286,11 +286,11 @@ csr-XXXXX   1m        kubelet-bootstrap   Pending
 Approve each certificate signing request using the `kubectl certificate approve` command:
 
 ```
-kubectl certificate approve csr-XXXXX
+kubectl certificate approve node-csr-XXXXX
 ```
 
 ```
-certificatesigningrequest "csr-XXXXX" approved
+certificatesigningrequest "node-csr-XXXXX" approved
 ```
 
 Once all certificate signing requests have been approved all nodes should be registered with the cluster:
@@ -301,7 +301,7 @@ kubectl get nodes
 
 ```
 NAME      STATUS    AGE       VERSION
-worker0   Ready     7m        v1.6.1
-worker1   Ready     5m        v1.6.1
-worker2   Ready     2m        v1.6.1
+worker0   Ready     7m        v1.7.0-rc.1
+worker1   Ready     5m        v1.7.0-rc.1
+worker2   Ready     2m        v1.7.0-rc.1
 ```
