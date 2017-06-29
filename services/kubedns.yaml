@@ -12,6 +12,8 @@
 # See the License for the specific language governing permissions and
 # limitations under the License.
 
+# __MACHINE_GENERATED_WARNING__
+
 apiVersion: v1
 kind: Service
 metadata:
@@ -20,15 +22,16 @@ metadata:
   labels:
     k8s-app: kube-dns
     kubernetes.io/cluster-service: "true"
+    addonmanager.kubernetes.io/mode: Reconcile
     kubernetes.io/name: "KubeDNS"
 spec:
   selector:
     k8s-app: kube-dns
-  clusterIP: 10.32.0.10 
+  clusterIP: 10.32.0.10
   ports:
-    - name: dns
-      port: 53
-      protocol: UDP
-    - name: dns-tcp
-      port: 53
-      protocol: TCP
+  - name: dns
+    port: 53
+    protocol: UDP
+  - name: dns-tcp
+    port: 53
+    protocol: TCP

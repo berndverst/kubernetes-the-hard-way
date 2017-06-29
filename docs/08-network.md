@@ -40,23 +40,41 @@ Output:
 
 ## Create Routes
 
-```
-gcloud compute routes create kubernetes-route-10-200-0-0-24 \
-  --network kubernetes-the-hard-way \
-  --next-hop-address 10.240.0.20 \
-  --destination-range 10.200.0.0/24
+```shell
+az network route-table create -g kubernetes \
+  -n kubernetes-routes
 ```
 
-```
-gcloud compute routes create kubernetes-route-10-200-1-0-24 \
-  --network kubernetes-the-hard-way \
-  --next-hop-address 10.240.0.21 \
-  --destination-range 10.200.1.0/24
+```shell
+az network vnet subnet update -g kubernetes \
+  -n kubernetes-subnet \
+  --vnet-name kubernetes-vnet \
+  --route-table kubernetes-routes
 ```
 
+```shell
+az network route-table route create -g kubernetes \
+  -n kubernetes-route-10-200-0-0-24 \
+  --route-table-name kubernetes-routes \
+  --address-prefix 10.200.0.0/24 \
+  --next-hop-ip-address 10.240.0.20 \
+  --next-hop-type VirtualAppliance
 ```
-gcloud compute routes create kubernetes-route-10-200-2-0-24 \
-  --network kubernetes-the-hard-way \
-  --next-hop-address 10.240.0.22 \
-  --destination-range 10.200.2.0/24
+
+```shell
+az network route-table route create -g kubernetes \
+  -n kubernetes-route-10-200-1-0-24 \
+  --route-table-name kubernetes-routes \
+  --address-prefix 10.200.1.0/24 \
+  --next-hop-ip-address 10.240.0.21 \
+  --next-hop-type VirtualAppliance
+```
+
+```shell
+az network route-table route create -g kubernetes \
+  -n kubernetes-route-10-200-2-0-24 \
+  --route-table-name kubernetes-routes \
+  --address-prefix 10.200.2.0/24 \
+  --next-hop-ip-address 10.240.0.22 \
+  --next-hop-type VirtualAppliance
 ```
