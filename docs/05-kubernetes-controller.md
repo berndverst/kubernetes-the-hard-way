@@ -56,29 +56,24 @@ sudo mv ca.pem ca-key.pem kubernetes-key.pem kubernetes.pem /var/lib/kubernetes/
 Download the official Kubernetes release binaries:
 
 ```
-wget https://storage.googleapis.com/kubernetes-release/release/v1.6.1/bin/linux/amd64/kube-apiserver
-```
-
-```
-wget https://storage.googleapis.com/kubernetes-release/release/v1.6.1/bin/linux/amd64/kube-controller-manager
-```
-
-```
-wget https://storage.googleapis.com/kubernetes-release/release/v1.6.1/bin/linux/amd64/kube-scheduler
-```
-
-```
-wget https://storage.googleapis.com/kubernetes-release/release/v1.6.1/bin/linux/amd64/kubectl
+wget https://dl.k8s.io/v1.7.0-rc.1/kubernetes-server-linux-amd64.tar.gz
+tar -xzf kubernetes-server-linux-amd64.tar.gz
 ```
 
 Install the Kubernetes binaries:
 
 ```
-chmod +x kube-apiserver kube-controller-manager kube-scheduler kubectl
+chmod +x ~/kubernetes/server/bin/kube-apiserver \
+  ~/kubernetes/server/bin/kube-controller-manager \
+  ~/kubernetes/server/bin/kube-scheduler \
+  ~/kubernetes/server/bin/kubectl
 ```
 
 ```
-sudo mv kube-apiserver kube-controller-manager kube-scheduler kubectl /usr/bin/
+sudo mv ~/kubernetes/server/bin/kube-apiserver \
+  ~/kubernetes/server/bin/kube-controller-manager \
+  ~/kubernetes/server/bin/kube-scheduler \
+  ~/kubernetes/server/bin/kubectl /usr/bin/
 ```
 
 ### Kubernetes API Server
@@ -86,8 +81,7 @@ sudo mv kube-apiserver kube-controller-manager kube-scheduler kubectl /usr/bin/
 Capture the internal IP address of the machine:
 
 ```
-INTERNAL_IP=$(curl -s -H "Metadata-Flavor: Google" \
-  http://metadata.google.internal/computeMetadata/v1/instance/network-interfaces/0/ip)
+INTERNAL_IP=$(ip addr show eth0 | grep -oP '(?<=inet\s)\d+(\.\d+){3}')
 ```
 
 Create the systemd unit file:
@@ -278,33 +272,22 @@ etcd-2               Healthy   {"health": "true"}
 The virtual machines created in this tutorial will not have permission to complete this section. Run the following commands from the same place used to create the virtual machines for this tutorial.
 
 ```
-gcloud compute http-health-checks create kube-apiserver-health-check \
-  --description "Kubernetes API Server Health Check" \
+az network lb probe create -g kubernetes \
+  -n kubernetes-apiserver-check \
+  --lb-name kubernetes-lb \
+  --protocol http \
   --port 8080 \
-  --request-path /healthz
+  --path /healthz
 ```
 
 ```
-gcloud compute target-pools create kubernetes-target-pool \
-  --http-health-check=kube-apiserver-health-check \
-  --region us-central1
-```
-
-```
-gcloud compute target-pools add-instances kubernetes-target-pool \
-  --instances controller0,controller1,controller2
-```
-
-```
-KUBERNETES_PUBLIC_ADDRESS=$(gcloud compute addresses describe kubernetes-the-hard-way \
-  --region us-central1 \
-  --format 'value(address)')
-```
-
-```
-gcloud compute forwarding-rules create kubernetes-forwarding-rule \
-  --address ${KUBERNETES_PUBLIC_ADDRESS} \
-  --ports 6443 \
-  --target-pool kubernetes-target-pool \
-  --region us-central1
+az network lb rule create -g kubernetes \
+  -n kubernetes-apiserver-rule \
+  --protocol tcp \
+  --lb-name kubernetes-lb \
+  --frontend-ip-name LoadBalancerFrontEnd \
+  --frontend-port 6443 \
+  --backend-pool-name kubernetes-lb-pool \
+  --backend-port 6443 \
+  --probe-name kubernetes-apiserver-check
 ```
