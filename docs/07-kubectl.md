@@ -7,7 +7,7 @@ Run the following commands from the machine which will be your Kubernetes Client
 ### OS X
 
 ```
-wget https://storage.googleapis.com/kubernetes-release/release/v1.6.1/bin/darwin/amd64/kubectl
+wget https://storage.googleapis.com/kubernetes-release/release/v1.7.0-rc.1/bin/darwin/amd64/kubectl
 chmod +x kubectl
 sudo mv kubectl /usr/local/bin
 ```
@@ -15,7 +15,7 @@ sudo mv kubectl /usr/local/bin
 ### Linux
 
 ```
-wget https://storage.googleapis.com/kubernetes-release/release/v1.6.1/bin/linux/amd64/kubectl
+wget https://storage.googleapis.com/kubernetes-release/release/v1.7.0-rc.1/bin/linux/amd64/kubectl
 chmod +x kubectl
 sudo mv kubectl /usr/local/bin
 ```
@@ -25,9 +25,8 @@ sudo mv kubectl /usr/local/bin
 In this section you will configure the kubectl client to point to the [Kubernetes API Server Frontend Load Balancer](04-kubernetes-controller.md#setup-kubernetes-api-server-frontend-load-balancer).
 
 ```
-KUBERNETES_PUBLIC_ADDRESS=$(gcloud compute addresses describe kubernetes-the-hard-way \
-  --region us-central1 \
-  --format 'value(address)')
+KUBERNETES_PUBLIC_ADDRESS=$(az network public-ip show -g kubernetes \
+  -n kubernetes-pip --query "ipAddress" -otsv)
 ```
 
 Also be sure to locate the CA certificate [created earlier](02-certificate-authority.md). Since we are using self-signed TLS certs we need to trust the CA certificate so we can verify the remote API Servers.
@@ -80,7 +79,7 @@ kubectl get nodes
 
 ```
 NAME      STATUS    AGE       VERSION
-worker0   Ready     7m        v1.6.1
-worker1   Ready     5m        v1.6.1
-worker2   Ready     2m        v1.6.1
+worker0   Ready     7m        v1.7.0-rc.1
+worker1   Ready     5m        v1.7.0-rc.1
+worker2   Ready     2m        v1.7.0-rc.1
 ```
