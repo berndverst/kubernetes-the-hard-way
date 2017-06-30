@@ -32,36 +32,6 @@ The following components will leverage Kubernetes RBAC:
 
 The other components, mainly the `scheduler` and `controller manager`, access the Kubernetes API server locally over the insecure API port which does not require authentication. The insecure port is only enabled for local access.
 
-### Create the TLS Bootstrap Token
-
-This section will walk you through the creation of a TLS bootstrap token that will be used to [bootstrap TLS client certificates for kubelets](https://kubernetes.io/docs/admin/kubelet-tls-bootstrapping/).
-
-Generate a token:
-
-```
-BOOTSTRAP_TOKEN=$(head -c 16 /dev/urandom | od -An -t x | tr -d ' ')
-```
-
-Generate a token file:
-
-```
-cat > token.csv <<EOF
-${BOOTSTRAP_TOKEN},kubelet-bootstrap,10001,"system:kubelet-bootstrap"
-EOF
-```
-
-Distribute the bootstrap token file to each controller node:
-
-```
-for host in controller0 controller1 controller2; do
-  PUBLIC_IP_ADDRESS=$(az network public-ip show -g kubernetes \
-    -n ${host}-pip --query "ipAddress" -otsv)
-
-  scp token.csv \
-    $(whoami)@${PUBLIC_IP_ADDRESS}:~/
-done
-```
-
 ## Client Authentication Configs
 
 This section will walk you through creating kubeconfig files that will be used to bootstrap kubelets, which will then generate their own kubeconfigs based on dynamically generated certificates, and a kubeconfig for authenticating kube-proxy clients.
@@ -76,33 +46,6 @@ KUBERNETES_PUBLIC_ADDRESS=$(az network public-ip show -g kubernetes \
 ```
 
 ## Create client kubeconfig files
-
-### Create the bootstrap kubeconfig file
-
-```
-kubectl config set-cluster kubernetes-the-hard-way \
-  --certificate-authority=ca.pem \
-  --embed-certs=true \
-  --server=https://${KUBERNETES_PUBLIC_ADDRESS}:6443 \
-  --kubeconfig=bootstrap.kubeconfig
-```
-
-```
-kubectl config set-credentials kubelet-bootstrap \
-  --token=${BOOTSTRAP_TOKEN} \
-  --kubeconfig=bootstrap.kubeconfig
-```
-
-```
-kubectl config set-context default \
-  --cluster=kubernetes-the-hard-way \
-  --user=kubelet-bootstrap \
-  --kubeconfig=bootstrap.kubeconfig
-```
-
-```
-kubectl config use-context default --kubeconfig=bootstrap.kubeconfig
-```
 
 ### Create the kube-proxy kubeconfig
 
@@ -141,7 +84,7 @@ for host in worker0 worker1 worker2; do
   PUBLIC_IP_ADDRESS=$(az network public-ip show -g kubernetes \
   -n ${host}-pip --query "ipAddress" -otsv)
 
-  scp bootstrap.kubeconfig kube-proxy.kubeconfig \
+  scp kube-proxy.kubeconfig \
   $(whoami)@${PUBLIC_IP_ADDRESS}:~/
 done
 ```

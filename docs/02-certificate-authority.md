@@ -219,10 +219,19 @@ cat > kubernetes-csr.json <<EOF
 {
   "CN": "kubernetes",
   "hosts": [
+    "worker0",
+    "worker1",
+    "worker2",
+    "ip-10-240-0-20",
+    "ip-10-240-0-21",
+    "ip-10-240-0-22",
     "10.32.0.1",
     "10.240.0.10",
     "10.240.0.11",
     "10.240.0.12",
+    "10.240.0.20",
+    "10.240.0.21",
+    "10.240.0.22",
     "${KUBERNETES_PUBLIC_ADDRESS}",
     "127.0.0.1"
   ],
@@ -270,7 +279,7 @@ for host in worker0 worker1 worker2; do
   PUBLIC_IP_ADDRESS=$(az network public-ip show -g kubernetes \
     -n ${host}-pip --query "ipAddress" -otsv)
 
-  scp ca.pem kube-proxy-key.pem kube-proxy.pem \
+  scp ca.pem kube-proxy-key.pem kube-proxy.pem kubernetes.pem kubernetes-key.pem \
     $(whoami)@${PUBLIC_IP_ADDRESS}:~/
 done
 ```

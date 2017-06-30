@@ -31,15 +31,6 @@ Run the following commands on `controller0`, `controller1`, `controller2`:
 
 ---
 
-Copy the bootstrap token into place:
-
-```
-sudo mkdir -p /var/lib/kubernetes/
-```
-
-```
-sudo mv token.csv /var/lib/kubernetes/
-```
 
 ### TLS Certificates
 
@@ -48,6 +39,7 @@ The TLS certificates created in the [Setting up a CA and TLS Cert Generation](02
 Copy the TLS certificates to the Kubernetes configuration directory:
 
 ```
+sudo mkdir -p /var/lib/kubernetes/
 sudo mv ca.pem ca-key.pem kubernetes-key.pem kubernetes.pem /var/lib/kubernetes/
 ```
 
@@ -56,7 +48,7 @@ sudo mv ca.pem ca-key.pem kubernetes-key.pem kubernetes.pem /var/lib/kubernetes/
 Download the official Kubernetes release binaries:
 
 ```
-wget https://dl.k8s.io/v1.7.0-rc.1/kubernetes-server-linux-amd64.tar.gz
+wget https://dl.k8s.io/v1.7.0/kubernetes-server-linux-amd64.tar.gz
 tar -xzf kubernetes-server-linux-amd64.tar.gz
 ```
 
@@ -111,7 +103,6 @@ ExecStart=/usr/bin/kube-apiserver \\
   --etcd-keyfile=/var/lib/kubernetes/kubernetes-key.pem \\
   --etcd-servers=https://10.240.0.10:2379,https://10.240.0.11:2379,https://10.240.0.12:2379 \\
   --event-ttl=1h \\
-  --experimental-bootstrap-token-auth \\
   --insecure-bind-address=0.0.0.0 \\
   --kubelet-certificate-authority=/var/lib/kubernetes/ca.pem \\
   --kubelet-client-certificate=/var/lib/kubernetes/kubernetes.pem \\
@@ -123,7 +114,6 @@ ExecStart=/usr/bin/kube-apiserver \\
   --service-node-port-range=30000-32767 \\
   --tls-cert-file=/var/lib/kubernetes/kubernetes.pem \\
   --tls-private-key-file=/var/lib/kubernetes/kubernetes-key.pem \\
-  --token-auth-file=/var/lib/kubernetes/token.csv \\
   --v=2
 Restart=on-failure
 RestartSec=5

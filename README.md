@@ -1,8 +1,6 @@
 # Kubernetes The Hard Way - Microsoft Azure Edition
 #### A guide based on *kelseyhightower's* tutorial for Kubernetes on GCP and Azure specifics steps by *lostintangent*
 
-## Work in Progress: This guide is not ready for use at this time.
-
 This tutorial will walk you through setting up Kubernetes the hard way. This guide is not for people looking for a fully automated command to bring up a Kubernetes cluster. If that's you then check out [Azure Container Service](https://azure.microsoft.com/en-us/services/container-service/), or the [Getting Started Guides](http://kubernetes.io/docs/getting-started-guides/).
 
 This tutorial is optimized for learning, which means taking the long route to help people understand each task required to bootstrap a Kubernetes cluster. This tutorial requires access to [Microsoft Azure](azure.microsoft.com).
@@ -15,14 +13,13 @@ The target audience for this tutorial is someone planning to support a productio
 
 ## Cluster Details
 
-* Kubernetes 1.6.0
-* Docker 1.12.6
-* etcd 3.1.4
+* Kubernetes 1.7.0
+* Docker 17.05.0-CE
+* etcd 3.2.1
 * [CNI Based Networking](https://github.com/containernetworking/cni)
 * Secure communication between all components (etcd, control plane, workers)
 * Default Service Account and Secrets
 * [RBAC authorization enabled](https://kubernetes.io/docs/admin/authorization)
-* [TLS client certificate bootstrapping for kubelets](https://kubernetes.io/docs/admin/kubelet-tls-bootstrapping)
 * DNS add-on
 
 ### What's Missing
@@ -39,7 +36,7 @@ This tutorial assumes you have access to [Microsoft Azure](azure.microsoft.com) 
 
 * [Cloud Infrastructure Provisioning](docs/01-infrastructure-azure.md)
 * [Setting up a CA and TLS Cert Generation](docs/02-certificate-authority.md)
-* [Setting up TLS Client Bootstrap and RBAC Authentication](docs/03-auth-configs.md)
+* [Setting up RBAC Authentication](docs/03-auth-configs.md)
 * [Bootstrapping a H/A etcd cluster](docs/04-etcd.md)
 * [Bootstrapping a H/A Kubernetes Control Plane](docs/05-kubernetes-controller.md)
 * [Bootstrapping Kubernetes Workers](docs/06-kubernetes-worker.md)

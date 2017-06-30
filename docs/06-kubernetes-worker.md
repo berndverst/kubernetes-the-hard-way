@@ -15,22 +15,6 @@ Kubernetes worker nodes are responsible for running your containers. All Kuberne
 
 Some people would like to run workers and cluster services anywhere in the cluster. This is totally possible, and you'll have to decide what's best for your environment.
 
-## Prerequisites
-
-Each worker node will provision a unique TLS client certificate as defined in the [kubelet TLS bootstrapping guide](https://kubernetes.io/docs/admin/kubelet-tls-bootstrapping/). The `kubelet-bootstrap` user must be granted permission to request a client TLS certificate. 
-
-```
-ssh $(whoami)@$(az network public-ip show -g kubernetes -n controller0-pip --query "ipAddress" -otsv)
-```
-
-Enable TLS bootstrapping by binding the `kubelet-bootstrap` user to the `system:node-bootstrapper` cluster role:
-
-```
-kubectl create clusterrolebinding kubelet-bootstrap \
-  --clusterrole=system:node-bootstrapper \
-  --user=kubelet-bootstrap
-```
-
 ## Provision the Kubernetes Worker Nodes
 
 Run the following commands on `worker0`, `worker1`, `worker2`:
@@ -44,10 +28,6 @@ sudo mkdir -p /var/run/kubernetes
 ```
 
 ```
-sudo mv bootstrap.kubeconfig /var/lib/kubelet
-```
-
-```
 sudo mv kube-proxy.kubeconfig /var/lib/kube-proxy
 ```
 
@@ -55,6 +35,7 @@ Move the TLS certificates in place
 
 ```
 sudo mv ca.pem /var/lib/kubernetes/
+sudo mv kubernetes.pem kubernetes-key.pem /var/lib/kubelet/
 ```
 
 ### Install Docker
@@ -137,15 +118,8 @@ sudo tar -xvf cni-amd64-0799f5732f2a11b329d9e3d51b9c8f2e3759f2ff.tar.gz -C /opt/
 Download and install the Kubernetes worker binaries:
 
 ```
-wget https://storage.googleapis.com/kubernetes-release/release/v1.6.1/bin/linux/amd64/kubectl
-```
-
-```
-wget https://storage.googleapis.com/kubernetes-release/release/v1.6.1/bin/linux/amd64/kube-proxy
-```
-
-```
-wget https://storage.googleapis.com/kubernetes-release/release/v1.6.1/bin/linux/amd64/kubelet
+wget https://dl.k8s.io/v1.7.0/kubernetes-server-linux-amd64.tar.gz
+tar -xzf kubernetes-server-linux-amd64.tar.gz
 ```
 
 ```
@@ -178,14 +152,12 @@ ExecStart=/usr/bin/kubelet \\
   --cluster-dns=10.32.0.10 \\
   --cluster-domain=cluster.local \\
   --container-runtime=docker \\
-  --experimental-bootstrap-kubeconfig=/var/lib/kubelet/bootstrap.kubeconfig \\
   --network-plugin=kubenet \\
   --kubeconfig=/var/lib/kubelet/kubeconfig \\
   --serialize-image-pulls=false \\
   --register-node=true \\
-  --tls-cert-file=/var/lib/kubelet/kubelet-client.crt \\
-  --tls-private-key-file=/var/lib/kubelet/kubelet-client.key \\
-  --cert-dir=/var/lib/kubelet \\
+  --tls-cert-file=/var/lib/kubelet/kubernetes.pem \\
+  --tls-private-key-file=/var/lib/kubelet/kubernetes-key.pem \\
   --v=2
 Restart=on-failure
 RestartSec=5
@@ -260,40 +232,7 @@ sudo systemctl status kube-proxy --no-pager
 
 > Remember to run these steps on `worker0`, `worker1`, and `worker2`
 
-## Approve the TLS certificate requests
-
-Each worker node will submit a certificate signing request which must be approved before the node is allowed to join the cluster.
-
-Log into one of the controller nodes:
-
-```
-ssh $(whoami)@$(az network public-ip show -g kubernetes -n controller0-pip --query "ipAddress" -otsv)
-```
-
-List the pending certificate requests:
-
-```
-kubectl get csr
-```
-
-```
-NAME             AGE       REQUESTOR           CONDITION
-node-csr-XXXXX   1m        kubelet-bootstrap   Pending
-```
-
-> Use the kubectl describe csr command to view the details of a specific signing request.
-
-Approve each certificate signing request using the `kubectl certificate approve` command:
-
-```
-kubectl certificate approve node-csr-XXXXX
-```
-
-```
-certificatesigningrequest "node-csr-XXXXX" approved
-```
-
-Once all certificate signing requests have been approved all nodes should be registered with the cluster:
+Verify everything is working.
 
 ```
 kubectl get nodes
@@ -301,7 +240,7 @@ kubectl get nodes
 
 ```
 NAME      STATUS    AGE       VERSION
-worker0   Ready     7m        v1.7.0-rc.1
-worker1   Ready     5m        v1.7.0-rc.1
-worker2   Ready     2m        v1.7.0-rc.1
+worker0   Ready     7m        v1.7.0
+worker1   Ready     5m        v1.7.0
+worker2   Ready     2m        v1.7.0
 ```
